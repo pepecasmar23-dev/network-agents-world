@@ -5365,5 +5365,58 @@ canvas#world.dragging{cursor:grabbing}
   window.addEventListener('pointerdown', unlock);
 })();
 </script>
+   <script>
+(function(){
+  const tryInit = setInterval(() => {
+    if (!(window.NAW && NAW.app && NAW.app.renderer && NAW.app.agents && NAW.app.canvas)) return;
+    clearInterval(tryInit);
+    const app = NAW.app, R = app.renderer, canvas = app.canvas;
+    let dragAgent = null, activePointerId = null;
+
+    function worldPointFromEvent(e){
+      const rect = canvas.getBoundingClientRect();
+      return R.screenToWorld(e.clientX - rect.left, e.clientY - rect.top);
+    }
+
+    window.addEventListener('pointerdown', (e) => {
+      if (e.target !== canvas) return;
+      const p = worldPointFromEvent(e);
+      const a = app.agents.nearestAgent(p.x, p.y - 8, 16);
+      if (!a) return;
+      dragAgent = a;
+      activePointerId = e.pointerId;
+      a.releaseSpot();
+      a.frozen = true;
+      a.path = null; a.after = null;
+      app.selectAgent(a.id, true);
+      canvas.style.cursor = 'grabbing';
+      e.stopPropagation();
+      e.preventDefault();
+    }, true);
+
+    window.addEventListener('pointermove', (e) => {
+      if (!dragAgent || e.pointerId !== activePointerId) return;
+      const p = worldPointFromEvent(e);
+      dragAgent.x = p.x;
+      dragAgent.y = p.y;
+      e.stopPropagation();
+    }, true);
+
+    function release(e){
+      if (!dragAgent || e.pointerId !== activePointerId) return;
+      const a = dragAgent;
+      dragAgent = null;
+      activePointerId = null;
+      a.frozen = false;
+      a.setState('idle');
+      a.idleTimer = 1.5 + Math.random() * 3;
+      canvas.style.cursor = 'grab';
+      e.stopPropagation();
+    }
+    window.addEventListener('pointerup', release, true);
+    window.addEventListener('pointercancel', release, true);
+  }, 200);
+})();
+</script>
 </body>
 </html>
