@@ -5418,5 +5418,38 @@ canvas#world.dragging{cursor:grabbing}
   }, 200);
 })();
 </script>
+   <script>
+(function(){
+  const PIN = '0001'; // <-- cambia esto por tu PIN
+  if (sessionStorage.getItem('naw_unlocked') === '1') return;
+
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:#070910;display:flex;align-items:center;justify-content:center;font-family:ui-monospace,monospace;color:#e8ecf7;';
+  overlay.innerHTML = `
+    <div style="text-align:center;padding:24px;border:2px solid #28324f;background:#0d111e;box-shadow:0 6px 0 rgba(0,0,0,.35);">
+      <div style="font-size:28px;margin-bottom:10px">🧄</div>
+      <div style="font-size:13px;letter-spacing:2px;margin-bottom:14px;color:#ffd166">NETWORK AGENTS WORLD</div>
+      <input id="navPinInput" type="password" inputmode="numeric" maxlength="12" placeholder="PIN"
+        style="font-family:inherit;font-size:16px;padding:8px 10px;background:#0a0e18;border:2px solid #2a3350;color:#eaf0ff;text-align:center;width:160px;outline:none;">
+      <div><button id="navPinBtn" style="margin-top:12px;font-family:inherit;font-size:11px;font-weight:700;letter-spacing:1px;color:#20180a;background:#ffd166;border:2px solid #b8933f;padding:7px 14px;cursor:pointer;">ENTRAR</button></div>
+      <div id="navPinErr" style="margin-top:10px;font-size:10px;color:#ff5a5f;height:12px;"></div>
+    </div>`;
+  document.body.appendChild(overlay);
+
+  function tryUnlock(){
+    const val = document.getElementById('navPinInput').value;
+    if (val === PIN) {
+      sessionStorage.setItem('naw_unlocked', '1');
+      overlay.remove();
+    } else {
+      document.getElementById('navPinErr').textContent = 'PIN incorrecto';
+      document.getElementById('navPinInput').value = '';
+    }
+  }
+  document.getElementById('navPinBtn').addEventListener('click', tryUnlock);
+  document.getElementById('navPinInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') tryUnlock(); });
+  setTimeout(() => document.getElementById('navPinInput').focus(), 50);
+})();
+</script>
 </body>
 </html>
