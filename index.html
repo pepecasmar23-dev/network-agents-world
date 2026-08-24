@@ -5311,5 +5311,59 @@ canvas#world.dragging{cursor:grabbing}
   window.addEventListener('pointerdown', unlock);
 })();
 </script>
+   <script>
+(function(){
+  let ctx = null, timer = null, started = false, chordIdx = 0;
+  const CHORDS = [
+    [220.00, 261.63, 329.63, 392.00], // Am7
+    [174.61, 220.00, 261.63, 349.23], // Fmaj7
+    [130.81, 164.81, 196.00, 261.63], // C
+    [196.00, 246.94, 293.66, 392.00]  // G
+  ];
+
+  function ac(){
+    if (!ctx) {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return null;
+      ctx = new AC();
+    }
+    if (ctx.state === 'suspended') ctx.resume();
+    return ctx;
+  }
+
+  function musicMuted(){
+    return window.NAW && NAW.Sfx && NAW.Sfx.on === false;
+  }
+
+  function playChord(freqs, time, dur){
+    const c = ac(); if (!c) return;
+    freqs.forEach((f, i) => {
+      const o = c.createOscillator(), g = c.createGain();
+      o.type = i === 0 ? 'sine' : 'triangle';
+      o.frequency.value = f;
+      g.gain.setValueAtTime(0, time);
+      g.gain.linearRampToValueAtTime(0.028, time + 2);
+      g.gain.linearRampToValueAtTime(0.028, time + dur - 3);
+      g.gain.linearRampToValueAtTime(0, time + dur);
+      o.connect(g); g.connect(c.destination);
+      o.start(time); o.stop(time + dur + 0.2);
+    });
+  }
+
+  function loop(){
+    const c = ac();
+    if (!c || musicMuted()) { timer = setTimeout(loop, 1000); return; }
+    const dur = 16;
+    playChord(CHORDS[chordIdx % CHORDS.length], c.currentTime + 0.05, dur);
+    chordIdx++;
+    timer = setTimeout(loop, dur * 1000);
+  }
+
+  function start(){ if (started) return; started = true; loop(); }
+
+  function unlock(){ start(); window.removeEventListener('pointerdown', unlock); }
+  window.addEventListener('pointerdown', unlock);
+})();
+</script>
 </body>
 </html>
