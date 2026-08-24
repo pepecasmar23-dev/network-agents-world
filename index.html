@@ -5204,5 +5204,57 @@ canvas#world.dragging{cursor:grabbing}
   }, 200);
 })();
 </script>
+<script>
+(function(){
+  function pickVoice(){
+    const voices = speechSynthesis.getVoices();
+    return voices.find(v => v.lang && v.lang.toLowerCase().startsWith('es')) || voices[0];
+  }
+  let voice = null;
+  if ('speechSynthesis' in window) {
+    voice = pickVoice();
+    speechSynthesis.onvoiceschanged = () => { voice = pickVoice(); };
+  }
+
+  function sayAloud(text){
+    if (!('speechSynthesis' in window)) return;
+    speechSynthesis.cancel();
+    const line = String(text).split('\n')[0];
+    const u = new SpeechSynthesisUtterance(line);
+    if (voice) u.voice = voice;
+    u.lang = 'es-MX';
+    u.pitch = 0.55;
+    u.rate = 0.95;
+    speechSynthesis.speak(u);
+  }
+
+  function unlock(){
+    if ('speechSynthesis' in window) speechSynthesis.resume();
+    window.removeEventListener('pointerdown', unlock);
+  }
+  window.addEventListener('pointerdown', unlock);
+
+  const AUTO_PHRASES = [
+    'Hola jefazo',
+    'Jefecito',
+    'Boss'
+  ];
+
+  const tryHook = setInterval(() => {
+    if (window.NAW && NAW.Events && NAW.EV && NAW.app && NAW.app.ajo) {
+      clearInterval(tryHook);
+
+      NAW.Events.on(NAW.EV.CHAT_MESSAGE, (m) => {
+        if (m.from === 'ajo') sayAloud(m.text);
+      });
+
+      setInterval(() => {
+        const text = AUTO_PHRASES[Math.floor(Math.random() * AUTO_PHRASES.length)];
+        NAW.app.ajo.speak(text, { muted: false });
+      }, 120000);
+    }
+  }, 200);
+})();
+</script>   
 </body>
 </html>
