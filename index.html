@@ -5521,5 +5521,124 @@ canvas#world.dragging{cursor:grabbing}
   };
 })();
 </script>
+   <script>
+(function(){
+  const tryInit = setInterval(() => {
+    if (!(window.NAW && NAW.app && NAW.app.renderer && NAW.app.agents && NAW.app.canvas && NAW.app.world && NAW.FLOOR)) return;
+    clearInterval(tryInit);
+    const app = NAW.app, R = app.renderer, canvas = app.canvas, W = app.world;
+
+    const layer = document.createElement('div');
+    layer.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:35;overflow:hidden;';
+    document.body.appendChild(layer);
+
+    function popup(agent, text, color, riseY){
+      const p = R.worldToScreen(agent.x, agent.y - 30);
+      const el = document.createElement('div');
+      el.textContent = text;
+      el.style.cssText = `position:absolute;left:${p.x}px;top:${p.y}px;transform:translate(-50%,0);
+        font-family:ui-monospace,monospace;font-weight:700;font-size:13px;color:${color};
+        text-shadow:2px 2px 0 #000;transition:transform 1.5s ease-out, opacity 1.5s ease-out;`;
+      layer.appendChild(el);
+      requestAnimationFrame(() => {
+        el.style.transform = `translate(-50%,0) translateY(-${riseY || 26}px)`;
+        el.style.opacity = '0';
+      });
+      setTimeout(() => el.remove(), 1600);
+    }
+
+    let dragAgent = null, activePointerId = null;
+    function worldPointFromEvent(e){
+      const rect = canvas.getBoundingClientRect();
+      return R.screenToWorld(e.clientX - rect.left, e.clientY - rect.top);
+    }
+    function tileAt(x, y){ return { x: Math.floor(x / W.TILE), y: Math.floor(y / W.TILE) }; }
+    function isOnDanceFloor(wx, wy){
+      const t = tileAt(wx, wy);
+      if (t.x < 0 || t.y < 0 || t.x >= W.W || t.y >= W.H) return false;
+      return W.floor[t.y * W.W + t.x] === NAW.FLOOR.DANCE;
+    }
+
+    window.addEventListener('pointerdown', (e) => {
+      if (e.target !== canvas) return;
+      const p = worldPointFromEvent(e);
+      const a = app.agents.nearestAgent(p.x, p.y - 8, 16);
+      if (!a) return;
+      dragAgent = a; activePointerId = e.pointerId;
+      a.releaseSpot(); a.frozen = true; a.path = null; a.after = null;
+      app.selectAgent(a.id, true);
+      canvas.style.cursor = 'grabbing';
+      e.stopPropagation(); e.preventDefault();
+    }, true);
+
+    window.addEventListener('pointermove', (e) => {
+      if (!dragAgent || e.pointerId !== activePointerId) return;
+      const p = worldPointFromEvent(e);
+      dragAgent.x = p.x; dragAgent.y = p.y;
+      e.stopPropagation();
+    }, true);
+
+    function release(e){
+      if (!dragAgent || e.pointerId !== activePointerId) return;
+      const a = dragAgent;
+      dragAgent = null; activePointerId = null;
+      a.frozen = false;
+      canvas.style.cursor = 'grab';
+      if (isOnDanceFloor(a.x, a.y)) {
+        a.setState('dance', 999);
+        registerDancer(a);
+      } else {
+        a.setState('idle');
+        a.idleTimer = 1 + Math.random() * 2;
+      }
+      e.stopPropagation();
+    }
+    window.addEventListener('pointerup', release, true);
+    window.addEventListener('pointercancel', release, true);
+
+    const MOVES = ['¡Moonwalk!', '¡Robot!', '¡Spin!', '¡Break!', '¡Sabor!', '¡Combo!', '¡Flow!', '¡Estilo libre!'];
+    const waitingFloor = [];
+    let battling = false;
+
+    function registerDancer(agent){
+      if (battling) return;
+      if (waitingFloor.includes(agent)) return;
+      waitingFloor.push(agent);
+      if (waitingFloor.length >= 2) {
+        const a = waitingFloor.shift();
+        const b = waitingFloor.shift();
+        runBattle(a, b);
+      }
+    }
+
+    function runBattle(a, b){
+      battling = true;
+      app.ajo.speak(`¡Batalla de baile! ${a.name} vs ${b.name}. 5 rondas, que gane el mejor. 🕺💃`);
+      let round = 0;
+      function nextTurn(){
+        if (round >= 5) return finish();
+        const turnAgent = round % 2 === 0 ? a : b;
+        const move = MOVES[Math.floor(Math.random() * MOVES.length)];
+        popup(turnAgent, move, '#4cc9f0', 22);
+        turnAgent.say(move, 1.4);
+        app.renderer.burst(turnAgent.x, turnAgent.y - 10, 'spark');
+        round++;
+        setTimeout(nextTurn, 900);
+      }
+      function finish(){
+        const winner = Math.random() < 0.5 ? a : b;
+        const loser = winner === a ? b : a;
+        popup(winner, '+10,000 AURA', '#ffd166', 34);
+        popup(loser, '-500 AURA', '#ff5a5f', 34);
+        app.renderer.burst(winner.x, winner.y - 14, 'confetti');
+        app.ajo.speak(`¡${winner.name} se llevó la batalla! +10,000 de aura. ${loser.name}, la próxima será. 😅`);
+        [a, b].forEach(ag => { ag.releaseSpot(); ag.setState('idle'); ag.idleTimer = 1 + Math.random() * 3; });
+        battling = false;
+      }
+      nextTurn();
+    }
+  }, 200);
+})();
+</script>
 </body>
 </html>
