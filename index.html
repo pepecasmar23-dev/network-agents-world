@@ -5255,6 +5255,61 @@ canvas#world.dragging{cursor:grabbing}
     }
   }, 200);
 })();
-</script>   
+</script>
+   <script>
+(function(){
+  let ctx = null, nextNoteTime = 0, timer = null, step = 0;
+  const BPM = 96, beat = 60 / BPM;
+  const bass = [130.81, 146.83, 164.81, 146.83];
+  const pad  = [261.63, 293.66, 329.63, 293.66];
+
+  function ac(){
+    if (!ctx) {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return null;
+      ctx = new AC();
+    }
+    if (ctx.state === 'suspended') ctx.resume();
+    return ctx;
+  }
+
+  function note(freq, time, dur, type, vol){
+    const c = ac(); if (!c) return;
+    const o = c.createOscillator(), g = c.createGain();
+    o.type = type; o.frequency.value = freq;
+    g.gain.setValueAtTime(0, time);
+    g.gain.linearRampToValueAtTime(vol, time + 0.03);
+    g.gain.exponentialRampToValueAtTime(0.0001, time + dur);
+    o.connect(g); g.connect(c.destination);
+    o.start(time); o.stop(time + dur + 0.05);
+  }
+
+  function musicMuted(){
+    return window.NAW && NAW.Sfx && NAW.Sfx.on === false;
+  }
+
+  function scheduler(){
+    const c = ac(); if (!c || musicMuted()) return;
+    while (nextNoteTime < c.currentTime + 0.4) {
+      note(bass[step % bass.length], nextNoteTime, beat * 0.9, 'triangle', 0.05);
+      note(pad[step % pad.length], nextNoteTime, beat * 1.8, 'sine', 0.025);
+      nextNoteTime += beat;
+      step++;
+    }
+  }
+
+  function startMusic(){
+    const c = ac(); if (!c || timer) return;
+    nextNoteTime = c.currentTime + 0.1;
+    timer = setInterval(scheduler, 100);
+  }
+
+  function unlock(){
+    startMusic();
+    window.removeEventListener('pointerdown', unlock);
+  }
+  window.addEventListener('pointerdown', unlock);
+})();
+</script>
 </body>
 </html>
