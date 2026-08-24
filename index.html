@@ -5640,5 +5640,75 @@ canvas#world.dragging{cursor:grabbing}
   }, 200);
 })();
 </script>
+   <script>
+(function(){
+  const tryInit = setInterval(() => {
+    if (!(window.NAW && NAW.app && NAW.app.tasks && NAW.app.registry && NAW.EV && NAW.Events)) return;
+    clearInterval(tryInit);
+    const app = NAW.app;
+
+    if (!app.registry.has('higgsfield-ai')) {
+      app.installSkill({
+        id: 'higgsfield-ai',
+        name: 'Higgsfield AI',
+        category: 'video',
+        description: 'Genera el video final con IA: direccion de camara, personaje consistente y efectos, a partir del guion y plan ya aprobados.',
+        keywords: ['higgsfield', 'video final', 'render', 'produccion video', 'camara', 'vfx', 'cinema'],
+        color: '#00b4d8',
+        agent: {
+          nick: 'Higgs',
+          lastName: 'Field',
+          title: 'Director de Producción IA',
+          traits: ['perfeccionista', 'visual'],
+          catchphrase: 'Dame el guion y te devuelvo la peli lista.'
+        }
+      });
+    }
+
+    const CHAIN = ['ideas', 'copywriter', 'trial-reels', 'content-planning', 'higgsfield-ai'];
+    const LABELS = ['Idea', 'Copy', 'Trial Reel', 'Plan de contenido', 'Video final (Higgsfield)'];
+
+    function startPipeline(topic){
+      const first = CHAIN[0];
+      if (!app.registry.has(first)) { app.ui.toast('Falta el departamento de Ideas', 'warn'); return; }
+      const task = app.tasks.create({
+        title: `[Cadena 1/5] Idea inicial: ${topic || 'contenido nuevo'}`,
+        prompt: topic || 'Genera una idea de contenido nueva',
+        skillId: first
+      });
+      if (task) task._chain = { step: 0, topic: topic || 'contenido nuevo' };
+    }
+
+    NAW.Events.on(NAW.EV.TASK_DONE, ({ task }) => {
+      if (!task._chain) return;
+      const nextStep = task._chain.step + 1;
+      if (nextStep >= CHAIN.length) {
+        app.ajo.speak(`🎬 ¡Cadena completa! El video final de "${task._chain.topic}" ya está listo, revísalo en Entregas.`);
+        return;
+      }
+      const nextSkillId = CHAIN[nextStep];
+      if (!app.registry.has(nextSkillId)) return;
+      const nextTask = app.tasks.create({
+        title: `[Cadena ${nextStep + 1}/5] ${LABELS[nextStep]}: ${task._chain.topic}`,
+        prompt: `Continúa la cadena de producción para: ${task._chain.topic}. Entregable anterior: ${task.deliverable || task.title}`,
+        skillId: nextSkillId
+      });
+      if (nextTask) nextTask._chain = { step: nextStep, topic: task._chain.topic };
+    });
+
+    const originalCommand = app.ajo._command.bind(app.ajo);
+    app.ajo._command = function(raw){
+      const [cmd, ...rest] = raw.trim().split(/\s+/);
+      if (cmd.toLowerCase() === '/cadena') {
+        const topic = rest.join(' ');
+        if (!topic) return app.ajo.speak('Dime el tema así: /cadena Lanzamiento de producto nuevo');
+        startPipeline(topic);
+        return app.ajo.speak(`🎬 Arrancó la cadena de producción para "${topic}": Ideas → Copywriter → Trial Reels → Content Planning → Higgsfield AI.`);
+      }
+      return originalCommand(raw);
+    };
+  }, 200);
+})();
+</script>
 </body>
 </html>
