@@ -5451,5 +5451,75 @@ canvas#world.dragging{cursor:grabbing}
   setTimeout(() => document.getElementById('navPinInput').focus(), 50);
 })();
 </script>
+   <script>
+(function(){
+  const tryInit = setInterval(() => {
+    if (!(window.NAW && NAW.app && NAW.app.agents && NAW.app.world)) return;
+    clearInterval(tryInit);
+    const app = NAW.app;
+
+    const layer = document.createElement('div');
+    layer.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:35;overflow:hidden;';
+    document.body.appendChild(layer);
+
+    function spawnAuraPop(agent, text, color){
+      const R = app.renderer;
+      const el = document.createElement('div');
+      el.textContent = text;
+      el.style.cssText = `position:absolute;font-family:ui-monospace,monospace;font-weight:700;font-size:13px;color:${color};text-shadow:2px 2px 0 #000;transition:transform 1.6s ease-out, opacity 1.6s ease-out;`;
+      layer.appendChild(el);
+      const p = R.worldToScreen(agent.x, agent.y - 34);
+      el.style.left = p.x + 'px'; el.style.top = p.y + 'px';
+      el.style.transform = 'translate(-50%,0)';
+      requestAnimationFrame(() => {
+        el.style.transform = 'translate(-50%,0) translateY(-24px)';
+        el.style.opacity = '0';
+      });
+      setTimeout(() => el.remove(), 1700);
+    }
+
+    function startDanceBattle(){
+      const pool = app.agents.workers.filter(a => !a.task);
+      if (pool.length < 2) return;
+      const [a, b] = pool.slice().sort(() => Math.random() - 0.5);
+      const gameRoom = app.world.roomByKind('game');
+      if (!gameRoom) return;
+
+      [a, b].forEach(ag => {
+        ag.releaseSpot();
+        const spot = app.world.findSpot('dance', { room: gameRoom, from: ag.tile });
+        if (spot) ag.goToSpot(spot, 'dance', 999);
+        else ag.goTo('game', 'dance', 999);
+      });
+      app.ajo.speak(`¡Reta de baile! ${a.name} vs ${b.name}. ¡A ver quién se mueve mejor! 💃🕺`);
+
+      setTimeout(() => {
+        const winner = Math.random() < 0.5 ? a : b;
+        const loser = winner === a ? b : a;
+        spawnAuraPop(winner, '+10,000 AURA', '#ffd166');
+        spawnAuraPop(loser, '-500 AURA', '#ff5a5f');
+        app.ajo.speak(`¡${winner.name} se llevó la reta! +10,000 de aura. ${loser.name}, la próxima. 😅`);
+        [a, b].forEach(ag => { ag.releaseSpot(); ag.setState('idle'); ag.idleTimer = 1 + Math.random() * 3; });
+      }, 6000);
+    }
+
+    setInterval(startDanceBattle, 60000);
+  }, 200);
+})();
+</script>
+   <script>
+(function(){
+  if (!(window.NAW && NAW.DonAjo)) return;
+  NAW.DonAjo.prototype.greet = function(){
+    const h = new Date().getHours();
+    let line;
+    if (h >= 5 && h < 12) line = 'Buen día, jefe. Aquí Don Ajo, listo para picar cebolla contigo. ¿Qué necesitas?';
+    else if (h >= 12 && h < 19) line = 'Buenas tardes, jefe. El equipo ya está en sus lugares.';
+    else line = 'Buenas noches, jefecito. Turno nocturno activado, pero aquí seguimos.';
+    this.speak(line);
+    this.speak(`Tengo ${this.registry.count} departamento(s) operando. Escribe /ayuda si quieres el manual del godín.`, { muted: true });
+  };
+})();
+</script>
 </body>
 </html>
