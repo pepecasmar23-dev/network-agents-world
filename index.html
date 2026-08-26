@@ -5862,5 +5862,88 @@ canvas#world.dragging{cursor:grabbing}
   }, 200);
 })();
 </script>
+   <script>
+(function(){
+  const tryInit = setInterval(() => {
+    if (!(window.NAW && NAW.app && NAW.Utils)) return;
+    clearInterval(tryInit);
+    const app = NAW.app, U = NAW.Utils;
+
+    const rosterPanel = document.getElementById('rosterPanel');
+    const panelHead = rosterPanel ? rosterPanel.querySelector('.panel-head') : null;
+    if (!rosterPanel || !panelHead) return;
+
+    const searchWrap = document.createElement('div');
+    searchWrap.style.cssText = 'padding:6px 8px;border-bottom:1px solid #1b2237;position:relative;flex:0 0 auto;';
+    searchWrap.innerHTML = `
+      <input id="rosterSearchInput" type="text" placeholder="Buscar empleado o departamento…"
+        style="width:100%;box-sizing:border-box;font-family:inherit;font-size:11px;color:#eaf0ff;
+        background:#0a0e18;border:2px solid #2a3350;padding:6px 8px;outline:none;">
+      <div id="rosterSearchResults" style="position:absolute;left:8px;right:8px;top:36px;z-index:50;
+        background:#0d111e;border:2px solid #28324f;display:none;max-height:220px;overflow-y:auto;"></div>`;
+    panelHead.insertAdjacentElement('afterend', searchWrap);
+
+    const input = document.getElementById('rosterSearchInput');
+    const resultsBox = document.getElementById('rosterSearchResults');
+
+    function matches(agent, q){
+      const dept = agent.skillId ? ((app.registry.get(agent.skillId) || {}).name || '') : 'Dirección';
+      const hay = U.norm(agent.name + ' ' + (agent.fullName || '') + ' ' + (agent.title || '') + ' ' + dept);
+      return hay.includes(q);
+    }
+
+    function focusAgent(agent){
+      app.selectAgent(agent.id, true);
+      app.renderer.focusAgent(agent, 3);
+      resultsBox.style.display = 'none';
+      input.value = agent.name;
+    }
+
+    function renderResults(list){
+      if (!list.length) { resultsBox.style.display = 'none'; return; }
+      resultsBox.innerHTML = list.slice(0, 12).map(a => {
+        const dept = a.skillId ? ((app.registry.get(a.skillId) || {}).name || '') : 'Dirección';
+        return `<div class="rs-item" data-id="${a.id}" style="padding:6px 8px;cursor:pointer;font-size:10.5px;
+          border-bottom:1px solid #1b2237;display:flex;justify-content:space-between;gap:6px;">
+          <span style="color:${a.color}">●</span>
+          <span style="flex:1;color:#eaf0ff;">${U.escapeHtml(a.name)}</span>
+          <span style="color:#8d99b8;">${U.escapeHtml(dept)}</span>
+        </div>`;
+      }).join('');
+      resultsBox.style.display = 'block';
+      resultsBox.querySelectorAll('.rs-item').forEach(el => {
+        el.addEventListener('mouseenter', () => el.style.background = '#1a2237');
+        el.addEventListener('mouseleave', () => el.style.background = '');
+        el.addEventListener('click', () => {
+          const agent = app.agents.get(el.dataset.id);
+          if (agent) focusAgent(agent);
+        });
+      });
+    }
+
+    input.addEventListener('input', () => {
+      const q = U.norm(input.value.trim());
+      if (!q) { resultsBox.style.display = 'none'; return; }
+      renderResults(app.agents.agents.filter(a => matches(a, q)));
+    });
+
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        const q = U.norm(input.value.trim());
+        if (!q) return;
+        const list = app.agents.agents.filter(a => matches(a, q));
+        if (list.length) focusAgent(list[0]);
+      } else if (e.key === 'Escape') {
+        resultsBox.style.display = 'none';
+        input.blur();
+      }
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!searchWrap.contains(e.target)) resultsBox.style.display = 'none';
+    });
+  }, 200);
+})();
+</script>
 </body>
 </html>
