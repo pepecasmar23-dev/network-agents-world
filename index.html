@@ -5643,72 +5643,63 @@ canvas#world.dragging{cursor:grabbing}
    <script>
 (function(){
   const tryInit = setInterval(() => {
-    if (!(window.NAW && NAW.app && NAW.app.tasks && NAW.app.registry && NAW.EV && NAW.Events)) return;
+    if (!(window.NAW && NAW.app && NAW.app.registry && NAW.app.agents && NAW.app.world)) return;
     clearInterval(tryInit);
     const app = NAW.app;
 
-    if (!app.registry.has('higgsfield-ai')) {
-      app.installSkill({
-        id: 'higgsfield-ai',
-        name: 'Higgsfield AI',
-        category: 'video',
-        description: 'Genera el video final con IA: direccion de camara, personaje consistente y efectos, a partir del guion y plan ya aprobados.',
-        keywords: ['higgsfield', 'video final', 'render', 'produccion video', 'camara', 'vfx', 'cinema'],
-        color: '#00b4d8',
-        agent: {
-          nick: 'Higgs',
-          lastName: 'Field',
-          title: 'Director de Producción IA',
-          traits: ['perfeccionista', 'visual'],
-          catchphrase: 'Dame el guion y te devuelvo la peli lista.'
-        }
-      });
+    function removeSkillHard(id){
+      const skill = app.registry.skills.get(id);
+      if (!skill) return;
+      app.registry.skills.delete(id);
+      app.registry.order = app.registry.order.filter(x => x !== id);
+      const agent = app.agents.bySkill.get(id);
+      if (agent) {
+        app.agents.bySkill.delete(id);
+        app.agents.byId.delete(agent.id);
+        app.agents.agents = app.agents.agents.filter(a => a !== agent);
+        if (app.agents.selectedId === agent.id) app.agents.select(null);
+      }
     }
 
-    const CHAIN = ['ideas', 'copywriter', 'trial-reels', 'content-planning', 'higgsfield-ai'];
-    const LABELS = ['Idea', 'Copy', 'Trial Reel', 'Plan de contenido', 'Video final (Higgsfield)'];
+    ['capcut', 'trial-reels', 'content-planning', 'copywriter', 'ideas', 'higgsfield-ai']
+      .forEach(removeSkillHard);
+    app.registry.save();
+    app._rebuild();
 
-    function startPipeline(topic){
-      const first = CHAIN[0];
-      if (!app.registry.has(first)) { app.ui.toast('Falta el departamento de Ideas', 'warn'); return; }
-      const task = app.tasks.create({
-        title: `[Cadena 1/5] Idea inicial: ${topic || 'contenido nuevo'}`,
-        prompt: topic || 'Genera una idea de contenido nueva',
-        skillId: first
-      });
-      if (task) task._chain = { step: 0, topic: topic || 'contenido nuevo' };
-    }
+    const DEPTS = [
+      { id: 'imagen-de-la-marca', name: 'Archivo', category: 'generic',
+        description: 'Custodia el material real de la marca: logos, fotos, video, guías de estilo.',
+        keywords: ['archivo','marca','logo','assets','material','brand','imagen de marca','recursos'] },
+      { id: 'generadora-de-ideas', name: 'Planning', category: 'ideas',
+        description: 'Investiga qué funciona y por qué; propone ángulos y conceptos.',
+        keywords: ['planning','investigar','tendencia','angulo','concepto','idea','research'] },
+      { id: 'copywriter', name: 'Redacción', category: 'copy',
+        description: 'Escribe guion, gancho y cierre.',
+        keywords: ['redaccion','guion','gancho','hook','cierre','copy','texto'] },
+      { id: 'escritor-de-prompts', name: 'Realización', category: 'generic',
+        description: 'Traduce el guion a órdenes de rodaje: prompts, tomas y dirección técnica.',
+        keywords: ['realizacion','prompts','rodaje','direccion','tomas','produccion'] },
+      { id: 'generador-de-trial-reels', name: 'Laboratorio', category: 'reels',
+        description: 'Prueba variantes y declara ganador.',
+        keywords: ['laboratorio','trial','prueba','variante','ganador','test'] },
+      { id: 'editor-de-capcut', name: 'Post', category: 'video',
+        description: 'Monta y exporta la pieza final.',
+        keywords: ['post','montaje','edicion','capcut','exportar','render'] },
+      { id: 'planificador-de-contenido', name: 'Tráfico', category: 'planning',
+        description: 'Reparte qué sale cada día.',
+        keywords: ['trafico','calendario','publicar','fecha','programar','agenda'] },
+      { id: 'recepcionista', name: 'Cuentas', category: 'generic',
+        description: 'Habla contigo y trae tu aprobación.',
+        keywords: ['cuentas','aprobacion','cliente','revision','autoriza'] },
+      { id: 'publicador-multicuenta', name: 'Medios', category: 'generic',
+        description: 'Coloca la pieza en las tres redes.',
+        keywords: ['medios','publicar','redes','multicuenta','instagram','tiktok','facebook'] }
+    ];
 
-    NAW.Events.on(NAW.EV.TASK_DONE, ({ task }) => {
-      if (!task._chain) return;
-      const nextStep = task._chain.step + 1;
-      if (nextStep >= CHAIN.length) {
-        app.ajo.speak(`🎬 ¡Cadena completa! El video final de "${task._chain.topic}" ya está listo, revísalo en Entregas.`);
-        return;
-      }
-      const nextSkillId = CHAIN[nextStep];
-      if (!app.registry.has(nextSkillId)) return;
-      const nextTask = app.tasks.create({
-        title: `[Cadena ${nextStep + 1}/5] ${LABELS[nextStep]}: ${task._chain.topic}`,
-        prompt: `Continúa la cadena de producción para: ${task._chain.topic}. Entregable anterior: ${task.deliverable || task.title}`,
-        skillId: nextSkillId
-      });
-      if (nextTask) nextTask._chain = { step: nextStep, topic: task._chain.topic };
-    });
-
-    const originalCommand = app.ajo._command.bind(app.ajo);
-    app.ajo._command = function(raw){
-      const [cmd, ...rest] = raw.trim().split(/\s+/);
-      if (cmd.toLowerCase() === '/cadena') {
-        const topic = rest.join(' ');
-        if (!topic) return app.ajo.speak('Dime el tema así: /cadena Lanzamiento de producto nuevo');
-        startPipeline(topic);
-        return app.ajo.speak(`🎬 Arrancó la cadena de producción para "${topic}": Ideas → Copywriter → Trial Reels → Content Planning → Higgsfield AI.`);
-      }
-      return originalCommand(raw);
-    };
+    DEPTS.forEach(d => { if (!app.registry.has(d.id)) app.installSkill(d); });
   }, 200);
 })();
+</script>
 </script>
 </body>
 </html>
