@@ -5701,5 +5701,68 @@ canvas#world.dragging{cursor:grabbing}
 })();
 </script>
 </script>
+   <script>
+(function(){
+  const tryInit = setInterval(() => {
+    if (!(window.NAW && NAW.app && NAW.app.tasks && NAW.app.registry && NAW.EV && NAW.Events)) return;
+    if (!NAW.app.registry.has('publicador-multicuenta')) return; // espera a que existan los 9 departamentos
+    clearInterval(tryInit);
+    const app = NAW.app;
+
+    const CHAIN = [
+      'imagen-de-la-marca',
+      'generadora-de-ideas',
+      'copywriter',
+      'escritor-de-prompts',
+      'generador-de-trial-reels',
+      'editor-de-capcut',
+      'planificador-de-contenido',
+      'recepcionista',
+      'publicador-multicuenta'
+    ];
+    const LABELS = ['Archivo', 'Planning', 'Redacción', 'Realización', 'Laboratorio', 'Post', 'Tráfico', 'Cuentas', 'Medios'];
+
+    function startPipeline(topic){
+      const first = CHAIN[0];
+      if (!app.registry.has(first)) { app.ui.toast('Falta el departamento de Archivo', 'warn'); return; }
+      const task = app.tasks.create({
+        title: `[Cadena 1/9] ${LABELS[0]}: ${topic || 'contenido nuevo'}`,
+        prompt: topic || 'Arranca la cadena de producción',
+        skillId: first
+      });
+      if (task) task._chain = { step: 0, topic: topic || 'contenido nuevo' };
+    }
+
+    NAW.Events.on(NAW.EV.TASK_DONE, ({ task }) => {
+      if (!task._chain) return;
+      const nextStep = task._chain.step + 1;
+      if (nextStep >= CHAIN.length) {
+        app.ajo.speak(`✅ ¡Cadena completa! "${task._chain.topic}" ya quedó publicada en las tres redes.`);
+        return;
+      }
+      const nextSkillId = CHAIN[nextStep];
+      if (!app.registry.has(nextSkillId)) return;
+      const nextTask = app.tasks.create({
+        title: `[Cadena ${nextStep + 1}/9] ${LABELS[nextStep]}: ${task._chain.topic}`,
+        prompt: `Continúa la cadena para: ${task._chain.topic}. Entregable anterior: ${task.deliverable || task.title}`,
+        skillId: nextSkillId
+      });
+      if (nextTask) nextTask._chain = { step: nextStep, topic: task._chain.topic };
+    });
+
+    const originalCommand = app.ajo._command.bind(app.ajo);
+    app.ajo._command = function(raw){
+      const [cmd, ...rest] = raw.trim().split(/\s+/);
+      if (cmd.toLowerCase() === '/cadena') {
+        const topic = rest.join(' ');
+        if (!topic) return app.ajo.speak('Dime el tema así: /cadena Lanzamiento de producto nuevo');
+        startPipeline(topic);
+        return app.ajo.speak(`🎬 Arrancó la cadena para "${topic}": Archivo → Planning → Redacción → Realización → Laboratorio → Post → Tráfico → Cuentas → Medios.`);
+      }
+      return originalCommand(raw);
+    };
+  }, 200);
+})();
+</script>
 </body>
 </html>
