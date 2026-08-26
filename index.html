@@ -5802,5 +5802,65 @@ canvas#world.dragging{cursor:grabbing}
   }, 200);
 })();
 </script>
+   <script>
+(function(){
+  const tryInit = setInterval(() => {
+    if (!(window.NAW && NAW.app && NAW.Sprites && NAW.app.registry.has('recepcionista'))) return;
+    clearInterval(tryInit);
+    const app = NAW.app;
+
+    const target = app.agents.forSkill('recepcionista');
+    if (!target) {
+      app.ui.toast('No encontré al empleado de Recepcionista', 'warn');
+      return;
+    }
+
+    target.name = 'Doña Mago';
+    target.fullName = 'Doña Mago';
+    target.special = 'dona-mago';
+    app.ui.dirty.roster = true;
+    app.ui.dirty.card = true;
+    app.ui.toast('👵 Ahora es <b>Doña Mago</b>', 'new', 3000);
+
+    const originalDraw = NAW.Sprites.drawAgent;
+    NAW.Sprites.drawAgent = function(ctx, a, time){
+      originalDraw(ctx, a, time);
+      if (a.special !== 'dona-mago') return;
+
+      const x = Math.round(a.x), y = Math.round(a.y);
+      ctx.save();
+      ctx.translate(x, y);
+      const baseY = -26;
+
+      // Peluca extravagante
+      ctx.fillStyle = '#c77dff';
+      ctx.fillRect(-8, baseY - 6, 16, 8);
+      ctx.fillStyle = '#e0b3ff';
+      ctx.fillRect(-8, baseY - 6, 16, 2);
+      ctx.fillStyle = '#a45ce0';
+      ctx.fillRect(-9, baseY - 2, 3, 6);
+      ctx.fillRect(6, baseY - 2, 3, 6);
+
+      // Lentes grandes
+      ctx.fillStyle = '#1b1b26';
+      ctx.fillRect(-5, baseY + 6, 4, 4);
+      ctx.fillRect(1, baseY + 6, 4, 4);
+      ctx.fillRect(-1, baseY + 7, 2, 1);
+      ctx.fillStyle = '#cfe8ff';
+      ctx.globalAlpha = 0.55;
+      ctx.fillRect(-4, baseY + 7, 2, 2);
+      ctx.fillRect(2, baseY + 7, 2, 2);
+      ctx.globalAlpha = 1;
+
+      // Tacones
+      ctx.fillStyle = '#e63946';
+      ctx.fillRect(-4, 1, 2, 2);
+      ctx.fillRect(3, 1, 2, 2);
+
+      ctx.restore();
+    };
+  }, 200);
+})();
+</script>
 </body>
 </html>
