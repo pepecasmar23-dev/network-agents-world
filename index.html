@@ -5764,5 +5764,43 @@ canvas#world.dragging{cursor:grabbing}
   }, 200);
 })();
 </script>
+   <script>
+(function(){
+  const tryInit = setInterval(() => {
+    if (!(window.NAW && NAW.app && NAW.app.registry && NAW.app.world)) return;
+    clearInterval(tryInit);
+    const app = NAW.app;
+
+    const NAMES = {
+      'imagen-de-la-marca': 'Imagen de la Marca',
+      'generadora-de-ideas': 'Generadora de Ideas',
+      'copywriter': 'Copywriter',
+      'escritor-de-prompts': 'Escritor de Prompts',
+      'generador-de-trial-reels': 'Generador de Trial Reels',
+      'editor-de-capcut': 'Editor de CapCut',
+      'planificador-de-contenido': 'Planificador de Contenido',
+      'recepcionista': 'Recepcionista',
+      'publicador-multicuenta': 'Publicador Multicuenta'
+    };
+
+    let changed = false;
+    Object.keys(NAMES).forEach(id => {
+      const skill = app.registry.get(id);
+      if (skill && skill.name !== NAMES[id]) {
+        skill.name = NAMES[id];
+        changed = true;
+      }
+    });
+
+    if (changed) {
+      app.registry.save();
+      app.world.signature = '';
+      app._rebuild();
+      app.ui.dirty.roster = true;
+      app.ui.dirty.skills = true;
+    }
+  }, 200);
+})();
+</script>
 </body>
 </html>
