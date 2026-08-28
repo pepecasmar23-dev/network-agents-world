@@ -5945,5 +5945,54 @@ canvas#world.dragging{cursor:grabbing}
   }, 200);
 })();
 </script>
+   <script>
+(function(){
+  if (!window.speechSynthesis || window.speechSynthesis.__donAjoElevenPatched) return;
+  const ORIGINAL_SPEAK = window.speechSynthesis.speak.bind(window.speechSynthesis);
+
+  const CLIPS = [
+    { test: t => t.includes('buen dia') || t.includes('buenos dias'), url: 'https://d8j0ntlcm91z4.cloudfront.net/user_34MKhBeBNsjXP44MiJuwWWWwFP3/hf_20260828_125949_5542e646-c311-4cb2-a54d-2d3a1ac93ad2.mp3' },
+    { test: t => t.includes('buenas tardes'), url: 'https://d8j0ntlcm91z4.cloudfront.net/user_34MKhBeBNsjXP44MiJuwWWWwFP3/hf_20260828_125949_5a538119-e189-42a2-925b-2b0882a3cf5f.mp3' },
+    { test: t => t.includes('buenas noches'), url: 'https://d8j0ntlcm91z4.cloudfront.net/user_34MKhBeBNsjXP44MiJuwWWWwFP3/hf_20260828_125949_0267016f-7926-470b-9b6f-1b8975e07478.mp3' },
+    { test: t => t.includes('jefazo'), url: 'https://d8j0ntlcm91z4.cloudfront.net/user_34MKhBeBNsjXP44MiJuwWWWwFP3/hf_20260828_125949_4711f8e6-7caa-4fe8-8e63-cd6454dc92aa.mp3' },
+    { test: t => t === 'jefecito', url: 'https://d8j0ntlcm91z4.cloudfront.net/user_34MKhBeBNsjXP44MiJuwWWWwFP3/hf_20260828_125948_bf1f2b33-740d-4604-966b-24d82e635bd5.mp3' },
+    { test: t => t === 'boss', url: 'https://d8j0ntlcm91z4.cloudfront.net/user_34MKhBeBNsjXP44MiJuwWWWwFP3/hf_20260828_125948_789e1b3a-7d5c-43c8-8f89-642864f71633.mp3' }
+  ];
+
+  function normalize(s){
+    return (s || '').toLowerCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .replace(/[.,!?¡¿]/g, '')
+      .trim();
+  }
+
+  function findClip(text){
+    const n = normalize(text);
+    for (const c of CLIPS) { if (c.test(n)) return c.url; }
+    return null;
+  }
+
+  let pending = null;
+  function tryPlayPending(){
+    if (!pending) return;
+    pending.play().then(() => { pending = null; }).catch(() => {});
+  }
+  window.addEventListener('pointerdown', tryPlayPending);
+  window.addEventListener('click', tryPlayPending);
+
+  window.speechSynthesis.speak = function(utterance){
+    const url = findClip(utterance && utterance.text);
+    if (url) {
+      const audio = new Audio(url);
+      if (typeof utterance.onstart === 'function') audio.addEventListener('play', utterance.onstart);
+      if (typeof utterance.onend === 'function') { audio.addEventListener('ended', utterance.onend); audio.addEventListener('error', utterance.onend); }
+      audio.play().catch(() => { pending = audio; });
+      return;
+    }
+    ORIGINAL_SPEAK(utterance);
+  };
+  window.speechSynthesis.__donAjoElevenPatched = true;
+})();
+</script>
 </body>
 </html>
