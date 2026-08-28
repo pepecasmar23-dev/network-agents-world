@@ -6118,5 +6118,159 @@ canvas#world.dragging{cursor:grabbing}
   window.speechSynthesis.__donAjoDynamicPatched = true;
 })();
 </script>
+   <script>
+/* ===== Don Ajo — voz Ainsley (ElevenLabs), reemplaza las voces anteriores ===== */
+(function(){
+  if (!window.speechSynthesis || window.speechSynthesis.__donAjoElevenPatchedV2) return;
+  const PREV1 = window.speechSynthesis.speak.bind(window.speechSynthesis);
+  const CLIPS = [
+    { test: t => t.includes('buen dia') || t.includes('buenos dias'), url: 'https://d8j0ntlcm91z4.cloudfront.net/user_34MKhBeBNsjXP44MiJuwWWWwFP3/hf_20260828_142807_fd25aa0a-8315-4d61-be73-19ae2ec0591f.mp3' },
+    { test: t => t.includes('buenas tardes'), url: 'https://d8j0ntlcm91z4.cloudfront.net/user_34MKhBeBNsjXP44MiJuwWWWwFP3/hf_20260828_142807_118d5889-2443-4177-a1ed-06d6b71e435e.mp3' },
+    { test: t => t.includes('buenas noches'), url: 'https://d8j0ntlcm91z4.cloudfront.net/user_34MKhBeBNsjXP44MiJuwWWWwFP3/hf_20260828_142807_8637b4d2-8782-406f-bffb-a2ac5ea72f21.mp3' },
+    { test: t => t.includes('jefazo'), url: 'https://d8j0ntlcm91z4.cloudfront.net/user_34MKhBeBNsjXP44MiJuwWWWwFP3/hf_20260828_142807_19169564-6a30-4a14-9313-58fd76a44d60.mp3' },
+    { test: t => t === 'jefecito', url: 'https://d8j0ntlcm91z4.cloudfront.net/user_34MKhBeBNsjXP44MiJuwWWWwFP3/hf_20260828_142807_b7bf472f-6b90-4afb-a652-77001378e6c3.mp3' },
+    { test: t => t === 'boss', url: 'https://d8j0ntlcm91z4.cloudfront.net/user_34MKhBeBNsjXP44MiJuwWWWwFP3/hf_20260828_142857_58715eb0-0d3e-4e4e-a4dd-26740509a21a.mp3' }
+  ];
+  function normalize(s){
+    return (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[.,!?¡¿]/g, '').trim();
+  }
+  function findClip(text){
+    const n = normalize(text);
+    for (const c of CLIPS) { if (c.test(n)) return c.url; }
+    return null;
+  }
+  let pending1 = null;
+  function tryResume1(){ if (!pending1) return; pending1.play().then(() => { pending1 = null; }).catch(() => {}); }
+  window.addEventListener('pointerdown', tryResume1);
+  window.addEventListener('click', tryResume1);
+
+  window.speechSynthesis.speak = function(utterance){
+    const url = findClip(utterance && utterance.text);
+    if (url) {
+      const audio = new Audio(url);
+      if (typeof utterance.onstart === 'function') audio.addEventListener('play', utterance.onstart);
+      if (typeof utterance.onend === 'function') { audio.addEventListener('ended', utterance.onend); audio.addEventListener('error', utterance.onend); }
+      audio.play().catch(() => { pending1 = audio; });
+      return;
+    }
+    PREV1(utterance);
+  };
+  window.speechSynthesis.__donAjoElevenPatchedV2 = true;
+})();
+
+/* ===== Don Ajo — narración dinámica (asignaciones, entregas, skill detectada) con voz Ainsley ===== */
+(function(){
+  if (!window.speechSynthesis || window.speechSynthesis.__donAjoDynamicPatchedV2) return;
+  const PREV2 = window.speechSynthesis.speak.bind(window.speechSynthesis);
+  const BASE = 'https://d8j0ntlcm91z4.cloudfront.net/user_34MKhBeBNsjXP44MiJuwWWWwFP3/';
+
+  const A = {
+    0:'hf_20260828_142808_27e658b8-a5cd-4522-90ab-722fc6d582f2.mp3',
+    1:'hf_20260828_142807_61fc36b5-5912-4cd1-b66f-f5a0b59a73a1.mp3',
+    2:'hf_20260828_142808_9df3595c-9838-4b57-8ec2-ed36c9739bf3.mp3',
+    3:'hf_20260828_142807_82428022-e53c-45b0-8c1d-a26f699f1ccb.mp3',
+    4:'hf_20260828_142807_ccf8c29d-4921-4aa4-b54d-0c954fb3c6eb.mp3',
+    5:'hf_20260828_142807_6dbf3c9c-518a-43a9-af31-6dd46cff4bfd.mp3',
+    6:'hf_20260828_142824_a662ae9b-44bf-4796-8a12-2bee0b88c226.mp3',
+    7:'hf_20260828_142824_2b373383-f120-4a17-9848-d07d963610b5.mp3',
+    8:'hf_20260828_142824_beef9b01-e69b-49bb-a310-6c3b50dfd55b.mp3',
+    9:'hf_20260828_142824_ea327481-bbd6-465c-b4cb-c9eaa96728dd.mp3',
+    10:'hf_20260828_142824_ab9b3182-f8c8-4d98-8064-d9199c1fe4ad.mp3',
+    11:'hf_20260828_142824_8f0a0615-c08e-41c3-851f-e3b95b4dfd49.mp3',
+    12:'hf_20260828_142824_5720c65f-9ef2-4a63-ac2d-d58744873aec.mp3',
+    13:'hf_20260828_142857_6ace6e37-f48d-4e7c-868d-78726110f3cf.mp3',
+    14:'hf_20260828_142824_8ac47634-8c16-4d73-95ce-e8f81597a270.mp3',
+    15:'hf_20260828_142824_503b5a2b-f2c8-4ee7-9fa6-e6b734257455.mp3',
+    16:'hf_20260828_142824_ebdbf301-3878-4ef5-a17f-2e39d7bf6b30.mp3',
+    17:'hf_20260828_142824_94638566-c968-4123-8bab-671ba4032c18.mp3',
+    18:'hf_20260828_142847_10a6a74b-fb6f-4e23-ad9f-423fde14229d.mp3',
+    19:'hf_20260828_142847_f15b89a8-33e2-4763-9d94-1a28c54290ad.mp3',
+    20:'hf_20260828_142847_2e465b62-03c1-484b-8ac6-38855bb05298.mp3',
+    21:'hf_20260828_142847_32f63da2-1fcd-4db6-935b-6ff0e729f62e.mp3',
+    22:'hf_20260828_142847_1b951ad7-0567-460a-81af-15dbe40c93cf.mp3',
+    23:'hf_20260828_142847_267d6271-c737-40ad-a09a-c163800660f7.mp3',
+    24:'hf_20260828_142847_c78d3d54-55b9-4465-b834-9f813b9a0c0c.mp3',
+    25:'hf_20260828_142847_39b58689-5ac2-4c44-ab75-8a60766bbd37.mp3',
+    26:'hf_20260828_142847_38bb68ae-2970-4375-841c-6433ef1da683.mp3',
+    27:'hf_20260828_142847_5f114033-784d-4e70-aed8-212ed1f81971.mp3',
+    28:'hf_20260828_142847_9af660a0-24bf-4a5a-8ef1-657bdec5e74a.mp3',
+    29:'hf_20260828_142847_8cea8a92-21f4-4087-942f-990c05c589f3.mp3',
+    30:'hf_20260828_142857_5804e429-66de-4eab-a75a-297424afe5ae.mp3'
+  };
+  Object.keys(A).forEach(k => { A[k] = BASE + A[k]; });
+
+  const TEMPLATES = [
+    { literals: ["Va, esto es chamba de ", " (", "). Ya le eché el grito."], audio: [A[0], null, A[1]] },
+    { literals: ["Órale, se lo mando a ", ", es su especialidad. Ahorita se sienta a chambear."], audio: [A[2], A[3]] },
+    { literals: ["Listo, patrón. ", " ya va a su escritorio con este pendiente."], audio: [A[4], A[5]] },
+    { literals: ["Eso lo resuelve ", " con los ojos cerrados. Va en camino."], audio: [A[6], A[7]] },
+    { literals: ["Ahí le encargo a ", ", que para eso le pago (con sazón)."], audio: [A[8], A[9]] },
+    { literals: ["", " anda con carga, pero te lo formo en su cola. No se me raja."], audio: [null, A[10]] },
+    { literals: ["Tiene tarea en curso, pero ya le apunté el pendiente en la lista."], audio: [A[11]] },
+    { literals: ["Ya quedó, patrón. ", " entregó: ", ""], audio: [A[12], A[13], null] },
+    { literals: ["¡Listo! ", " terminó con ", ". Revísalo en la bandeja."], audio: [A[14], A[15], A[16]] },
+    { literals: ["Entregado. ", " le puso sabor a ", "."], audio: [A[17], A[18], null] },
+    { literals: ["Se le atoró a ", ", pero ya lo va a reintentar. No se preocupe, patrón."], audio: [A[19], A[20]] },
+    { literals: ["Tuvimos un tropiezo con ", ". ", " lo está corrigiendo."], audio: [A[21], null, A[22]] },
+    { literals: ["¡Ey! Detecté una Skill nueva: ", ". Ya le abrí oficina y contraté a ", " (", "). Bienvenido al corporativo. 🧄"], audio: [A[23], A[24], null, A[25]] },
+    { literals: ["Tengo ", " departamento(s) operando. Escribe /ayuda si quieres el manual del godín."], audio: [A[26], A[27]] },
+    { literals: ["Mmm, para eso todavía no tengo departamento, compa. Instala la Skill y te abro oficina de volada."], audio: [A[28]] },
+    { literals: ["Esa no la traigo en el organigrama todavía. Dame la Skill y te la monto en tres segundos."], audio: [A[29]] },
+    { literals: ["Ni con todo mi sazón puedo con eso: falta la Skill. ¿Le damos de alta una nueva?"], audio: [A[30]] }
+  ];
+
+  function escapeRegExp(s){ return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+  TEMPLATES.forEach(t => {
+    const pattern = '^' + t.literals.map(escapeRegExp).join('([\\s\\S]+?)') + '$';
+    t.regex = new RegExp(pattern);
+  });
+
+  function findMatch(text){
+    for (const t of TEMPLATES) {
+      const m = t.regex.exec(text);
+      if (m) return { t, captures: m.slice(1) };
+    }
+    return null;
+  }
+
+  let pending2 = null;
+  function tryResume2(){ if (!pending2) return; const fn = pending2; pending2 = null; fn(); }
+  window.addEventListener('pointerdown', tryResume2);
+  window.addEventListener('click', tryResume2);
+
+  function playAudio(url){
+    return new Promise((resolve) => {
+      const audio = new Audio(url);
+      const done = () => resolve();
+      audio.addEventListener('ended', done);
+      audio.addEventListener('error', done);
+      audio.play().catch(() => { pending2 = () => audio.play().then(done).catch(done); });
+    });
+  }
+  function speakVariable(text){
+    return new Promise((resolve) => {
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = 'es-MX';
+      u.onend = () => resolve();
+      u.onerror = () => resolve();
+      PREV2(u);
+    });
+  }
+  async function playTemplate(t, captures){
+    for (let i = 0; i < t.literals.length; i++) {
+      if (t.audio[i]) await playAudio(t.audio[i]);
+      if (i < captures.length) await speakVariable(captures[i]);
+    }
+  }
+
+  window.speechSynthesis.speak = function(utterance){
+    const text = utterance && utterance.text;
+    const match = text ? findMatch(text) : null;
+    if (match) { playTemplate(match.t, match.captures); return; }
+    PREV2(utterance);
+  };
+  window.speechSynthesis.__donAjoDynamicPatchedV2 = true;
+})();
+</script>
 </body>
 </html>
