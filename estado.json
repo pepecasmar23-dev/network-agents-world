@@ -1,0 +1,63 @@
+{
+  "marca": "La Taquera",
+  "actualizado": "2026-08-29 09:02",
+  "puestos": [
+    {
+      "id": "imagen-de-la-marca",
+      "departamento": "Archivo",
+      "entregas": 3,
+      "estado": "con trabajo"
+    },
+    {
+      "id": "generadora-de-ideas",
+      "departamento": "Planning",
+      "entregas": 0,
+      "estado": "vacio"
+    },
+    {
+      "id": "copywriter",
+      "departamento": "Redaccion",
+      "entregas": 2,
+      "estado": "con trabajo"
+    },
+    {
+      "id": "escritor-de-prompts",
+      "departamento": "Realizacion",
+      "entregas": 2,
+      "estado": "con trabajo"
+    },
+    {
+      "id": "generador-de-trial-reels",
+      "departamento": "Laboratorio",
+      "entregas": 0,
+      "estado": "vacio"
+    },
+    {
+      "id": "editor-de-capcut",
+      "departamento": "Post",
+      "entregas": 1,
+      "estado": "con trabajo"
+    },
+    {
+      "id": "planificador-de-contenido",
+      "departamento": "Trafico",
+      "entregas": 0,
+      "estado": "vacio"
+    },
+    {
+      "id": "recepcionista",
+      "departamento": "Cuentas",
+      "entregas": 0,
+      "estado": "vacio"
+    },
+    {
+      "id": "publicador-multicuenta",
+      "departamento": "Medios",
+      "entregas": 0,
+      "estado": "vacio"
+    }
+  ],
+  "creditos": null,
+  "esperando_tu_si": [],
+  "nota": "Este archivo lo escribe la cadena en el PC. La pagina solo lo lee: no ejecuta nada, no puede generar ni publicar."
+}

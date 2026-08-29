@@ -6272,5 +6272,94 @@ canvas#world.dragging{cursor:grabbing}
   window.speechSynthesis.__donAjoDynamicPatchedV2 = true;
 })();
 </script>
+
+
+<!-- ===== ESPEJO DE LA CADENA REAL =====================================
+     Lee estado.json, que escribe la cadena en el PC de La Taquera con
+     `recepcionista/scripts/estado.py --publico`.
+
+     Esta pagina NO ejecuta la cadena y nunca lo hara: es HTML servido por
+     GitHub Pages, no hay proceso del otro lado. Solo enseña lo que ya paso.
+
+     Si el archivo no esta o no se puede leer, la plantilla se queda como
+     estaba. Nada de inventar datos para rellenar el hueco.
+================================================================= -->
+<style>
+  #espejoEstado { border-top:1px solid rgba(255,255,255,.08); margin-top:6px; padding-top:6px; }
+  #espejoEstado .ee-row { display:flex; align-items:center; gap:8px; padding:5px 10px;
+    font-size:12px; border-bottom:1px solid rgba(255,255,255,.04); }
+  #espejoEstado .ee-dot { width:7px; height:7px; border-radius:50%; flex:none; }
+  #espejoEstado .ee-on  { background:#5fd06a; box-shadow:0 0 6px #5fd06a88; }
+  #espejoEstado .ee-off { background:#6b6b6b; }
+  #espejoEstado .ee-name { flex:1; letter-spacing:.02em; }
+  #espejoEstado .ee-n { opacity:.65; font-variant-numeric:tabular-nums; }
+  #espejoEstado .ee-foot { padding:6px 10px; font-size:10.5px; opacity:.5; line-height:1.45; }
+  #espejoEstado .ee-wait { padding:5px 10px; font-size:11.5px; color:#ffb454; }
+</style>
+<script>
+(function () {
+  "use strict";
+
+  function pinta(d) {
+    // Se cuelga del PANEL, no de rosterList: la pagina reescribe rosterList
+    // cuando pinta sus propios empleados y se llevaria esto por delante.
+    var panel = document.getElementById("rosterPanel");
+    if (!panel) return;
+    var previo = document.getElementById("espejoEstado");
+    if (previo) previo.remove();
+
+    var caja = document.createElement("div");
+    caja.id = "espejoEstado";
+
+    (d.puestos || []).forEach(function (p) {
+      var row = document.createElement("div");
+      row.className = "ee-row";
+
+      var dot = document.createElement("span");
+      dot.className = "ee-dot " + (p.entregas > 0 ? "ee-on" : "ee-off");
+
+      var nom = document.createElement("span");
+      nom.className = "ee-name";
+      nom.textContent = p.departamento;
+
+      var n = document.createElement("span");
+      n.className = "ee-n";
+      n.textContent = p.entregas > 0 ? p.entregas : "—";
+
+      row.appendChild(dot); row.appendChild(nom); row.appendChild(n);
+      caja.appendChild(row);
+    });
+
+    (d.esperando_tu_si || []).forEach(function (e) {
+      var w = document.createElement("div");
+      w.className = "ee-wait";
+      w.textContent = "⏳ " + e.codigo + " espera tu sí — protege " + e.que_protege;
+      caja.appendChild(w);
+    });
+
+    var pie = document.createElement("div");
+    pie.className = "ee-foot";
+    pie.textContent = "Estado real de la cadena · " + (d.actualizado || "s/d") +
+      " · Esta página solo muestra; el trabajo corre en el equipo.";
+    caja.appendChild(pie);
+
+    panel.appendChild(caja);
+  }
+
+  function refrescar() {
+    fetch("estado.json", { cache: "no-store" })
+      .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+      .then(pinta)
+      .catch(function () {
+        // Sin archivo no se enseña nada, y la plantilla se queda como estaba.
+        // Un tablero con numeros inventados es peor que no tener tablero.
+      });
+  }
+
+  refrescar();
+  setInterval(refrescar, 15000);
+})();
+</script>
+
 </body>
 </html>
