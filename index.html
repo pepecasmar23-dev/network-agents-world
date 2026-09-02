@@ -6360,6 +6360,44 @@ canvas#world.dragging{cursor:grabbing}
   setInterval(refrescar, 15000);
 })();
 </script>
+<script>
+/* ===== Arranca en mute (voz + música) y quita Ainsley: vuelve a la voz normal del
+   navegador, pero solo suena si el icono de sonido (🔊/🔇) está activado ===== */
+(function(){
+  const tryInit = setInterval(() => {
+    if (!(window.NAW && NAW.Sfx && window.speechSynthesis)) return;
+    clearInterval(tryInit);
 
+    // 1) Arrancar muteado
+    NAW.Sfx.on = false;
+    const btn = document.getElementById('btnSound');
+    if (btn) {
+      btn.textContent = '🔇';
+      btn.classList.remove('active');
+    }
+
+    // 2) Voz de Don Ajo: voz normal del navegador (sin Ainsley), respeta el mute
+    function pickVoice(){
+      const voices = speechSynthesis.getVoices();
+      return voices.find(v => v.lang && v.lang.toLowerCase().startsWith('es')) || voices[0];
+    }
+    let voice = pickVoice();
+    speechSynthesis.onvoiceschanged = () => { voice = pickVoice(); };
+    const nativeSpeak = Object.getPrototypeOf(window.speechSynthesis).speak.bind(window.speechSynthesis);
+
+    window.speechSynthesis.speak = function(utterance){
+      if (!NAW.Sfx.on) return; // muteado: Don Ajo no habla
+      speechSynthesis.cancel();
+      const line = String((utterance && utterance.text) || '').split('\n')[0];
+      const u = new SpeechSynthesisUtterance(line);
+      if (voice) u.voice = voice;
+      u.lang = 'es-MX';
+      u.pitch = 0.55;
+      u.rate = 0.95;
+      nativeSpeak(u);
+    };
+  }, 200);
+})();
+</script>
 </body>
 </html>
