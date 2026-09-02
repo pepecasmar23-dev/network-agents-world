@@ -6399,5 +6399,56 @@ canvas#world.dragging{cursor:grabbing}
   }, 200);
 })();
 </script>
+   <script>
+/* ===== Arranca en mute (voz + música), voz normal del navegador (sin Ainsley),
+   y evita que la frase se repita dos veces (el archivo tiene DOS listeners viejos
+   de CHAT_MESSAGE que llaman a la voz por duplicado — aquí lo filtramos) ===== */
+(function(){
+  const tryInit = setInterval(() => {
+    if (!(window.NAW && NAW.Sfx && window.speechSynthesis)) return;
+    clearInterval(tryInit);
+
+    // 1) Arrancar muteado
+    NAW.Sfx.on = false;
+    const btn = document.getElementById('btnSound');
+    if (btn) {
+      btn.textContent = '🔇';
+      btn.classList.remove('active');
+    }
+
+    // 2) Voz de Don Ajo: voz normal del navegador, respeta el mute
+    function pickVoice(){
+      const voices = speechSynthesis.getVoices();
+      return voices.find(v => v.lang && v.lang.toLowerCase().startsWith('es')) || voices[0];
+    }
+    let voice = pickVoice();
+    speechSynthesis.onvoiceschanged = () => { voice = pickVoice(); };
+    const nativeSpeak = Object.getPrototypeOf(window.speechSynthesis).speak.bind(window.speechSynthesis);
+
+    // 3) Anti-duplicado: el archivo tiene dos listeners de CHAT_MESSAGE que llaman
+    //    a speak() con el mismo texto casi al mismo tiempo. Ignoramos la segunda.
+    let lastText = null;
+    let lastTime = 0;
+
+    window.speechSynthesis.speak = function(utterance){
+      const text = String((utterance && utterance.text) || '');
+      const now = Date.now();
+      if (text === lastText && (now - lastTime) < 1200) return; // duplicado, se ignora
+      lastText = text;
+      lastTime = now;
+
+      if (!NAW.Sfx.on) return; // muteado: Don Ajo no habla
+      speechSynthesis.cancel();
+      const line = text.split('\n')[0];
+      const u = new SpeechSynthesisUtterance(line);
+      if (voice) u.voice = voice;
+      u.lang = 'es-MX';
+      u.pitch = 0.55;
+      u.rate = 0.95;
+      nativeSpeak(u);
+    };
+  }, 200);
+})();
+</script>
 </body>
 </html>
