@@ -6450,5 +6450,49 @@ canvas#world.dragging{cursor:grabbing}
   }, 200);
 })();
 </script>
+   <script>
+/* ===== Don Ajo solo habla cuando detecta una Skill nueva ("Bienvenido al
+   corporativo"). Todo lo demás (saludos, avisos de tareas, /ayuda, etc.)
+   se queda mudo. Sigue respetando el icono de mute y evita el doble-habla. ===== */
+(function(){
+  const tryInit = setInterval(() => {
+    if (!(window.NAW && NAW.Sfx && window.speechSynthesis)) return;
+    clearInterval(tryInit);
+
+    function pickVoice(){
+      const voices = speechSynthesis.getVoices();
+      return voices.find(v => v.lang && v.lang.toLowerCase().startsWith('es')) || voices[0];
+    }
+    let voice = pickVoice();
+    speechSynthesis.onvoiceschanged = () => { voice = pickVoice(); };
+    const nativeSpeak = Object.getPrototypeOf(window.speechSynthesis).speak.bind(window.speechSynthesis);
+
+    let lastText = null;
+    let lastTime = 0;
+
+    window.speechSynthesis.speak = function(utterance){
+      const text = String((utterance && utterance.text) || '');
+
+      // Único mensaje permitido: el de "Skill nueva detectada"
+      if (!text.includes('Bienvenido al corporativo')) return;
+
+      const now = Date.now();
+      if (text === lastText && (now - lastTime) < 1200) return; // evita el doble-habla
+      lastText = text;
+      lastTime = now;
+
+      if (!NAW.Sfx.on) return; // respeta el icono de mute
+      speechSynthesis.cancel();
+      const line = text.split('\n')[0];
+      const u = new SpeechSynthesisUtterance(line);
+      if (voice) u.voice = voice;
+      u.lang = 'es-MX';
+      u.pitch = 0.55;
+      u.rate = 0.95;
+      nativeSpeak(u);
+    };
+  }, 200);
+})();
+</script>
 </body>
 </html>
